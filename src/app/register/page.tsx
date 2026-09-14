@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { nickToEmail, isValidNick } from '@/lib/nick';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [nick, setNick] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -26,20 +26,16 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, nickToEmail(nick), password);
+      await createUserWithEmailAndPassword(auth, nickToEmail(nick), password);
       router.push('/');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Ошибка';
-      if (
-        msg.includes('invalid-credential') ||
-        msg.includes('wrong-password') ||
-        msg.includes('user-not-found')
-      ) {
-        setError('Неверный ник или пароль');
-      } else if (msg.includes('too-many-requests')) {
-        setError('Слишком много попыток. Попробуй позже.');
+      if (msg.includes('email-already-in-use')) {
+        setError('Этот ник уже занят');
+      } else if (msg.includes('weak-password')) {
+        setError('Пароль минимум 6 символов');
       } else {
-        setError('Ошибка входа. Попробуй ещё раз.');
+        setError('Ошибка регистрации. Попробуй ещё раз.');
       }
     } finally {
       setLoading(false);
@@ -60,9 +56,9 @@ export default function LoginPage() {
             />
             <div className="absolute inset-0 rounded-2xl blur-2xl bg-purple-500/50 -z-10" />
           </div>
-          <h1 className="text-3xl font-bold neon-text mt-4">Вход</h1>
+          <h1 className="text-3xl font-bold neon-text mt-4">Регистрация</h1>
           <p className="text-[var(--text-secondary)] text-sm mt-1">
-            Войди в свой аккаунт Virion Mods
+            ⚠️ Временная страница — будет удалена
           </p>
         </div>
 
@@ -78,7 +74,6 @@ export default function LoginPage() {
                 value={nick}
                 onChange={(e) => setNick(e.target.value)}
                 required
-                autoComplete="username"
                 className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_15px_rgba(124,58,237,0.4)] transition-all"
               />
             </div>
@@ -94,13 +89,12 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                autoComplete="current-password"
                 className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_15px_rgba(124,58,237,0.4)] transition-all"
               />
             </div>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-sm text-red-400 animate-fade-in">
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-sm text-red-400">
                 {error}
               </div>
             )}
@@ -108,9 +102,9 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-gradient w-full py-3 rounded-lg font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-gradient w-full py-3 rounded-lg font-semibold text-white disabled:opacity-50"
             >
-              {loading ? 'Загрузка...' : 'Войти'}
+              {loading ? 'Создаём...' : 'Создать аккаунт'}
             </button>
           </form>
         </div>
@@ -120,7 +114,7 @@ export default function LoginPage() {
             href="/"
             className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-light)]"
           >
-            ← Вернуться на главную
+            ← На главную
           </Link>
         </div>
       </div>

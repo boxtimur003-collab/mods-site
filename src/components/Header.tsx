@@ -8,6 +8,11 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
+function getNickFromEmail(email: string | null | undefined): string {
+  if (!email) return 'user';
+  return email.split('@')[0];
+}
+
 export default function Header() {
   const { user, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,10 +24,11 @@ export default function Header() {
     router.push('/');
   }
 
+  const nick = getNickFromEmail(user?.email);
+
   return (
     <header className="sticky top-0 z-50 glass-card border-b border-[var(--border)]">
       <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-        {/* Логотип + название */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative">
             <Image
@@ -37,7 +43,6 @@ export default function Header() {
           <span className="text-xl font-bold neon-text">Virion Mods</span>
         </Link>
 
-        {/* Навигация + вход */}
         <nav className="flex items-center gap-4">
           <Link
             href="/"
@@ -61,10 +66,10 @@ export default function Header() {
                 className="flex items-center gap-2 px-3 py-2 rounded-lg glass-card hover:border-[var(--accent)]"
               >
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-xs font-bold">
-                  {user.email?.[0].toUpperCase()}
+                  {nick[0]?.toUpperCase()}
                 </div>
-                <span className="text-sm max-w-[120px] truncate hidden sm:block">
-                  {user.email}
+                <span className="text-sm font-medium hidden sm:block">
+                  {nick}
                 </span>
               </button>
 
@@ -72,8 +77,8 @@ export default function Header() {
                 <div className="absolute right-0 mt-2 w-56 glass-card rounded-lg py-2 animate-fade-in">
                   <div className="px-4 py-2 text-xs text-[var(--text-secondary)] border-b border-[var(--border)]">
                     Вы вошли как
-                    <div className="text-[var(--text-primary)] truncate">
-                      {user.email}
+                    <div className="text-[var(--text-primary)] font-medium text-sm truncate">
+                      {nick}
                     </div>
                   </div>
                   <button
