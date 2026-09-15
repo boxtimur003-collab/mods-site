@@ -9,6 +9,7 @@ import {
   collection,
   onSnapshot,
   addDoc,
+  deleteDoc,
   serverTimestamp,
   orderBy,
   query,
@@ -143,10 +144,33 @@ export default function AdminModPage() {
     }
   }
 
+  async function handleDeleteVersion(v: Version) {
+    if (
+      !confirm(
+        `Удалить версию v${v.version}?\n\nФайл останется в GitHub Releases, но перестанет отображаться на сайте.`
+      )
+    )
+      return;
+    try {
+      await deleteDoc(doc(db, 'mods', modId, 'versions', v.id));
+    } catch (err) {
+      alert('Ошибка удаления: ' + (err instanceof Error ? err.message : ''));
+    }
+  }
+
   if (authLoading || !user || !isAdmin(user.uid) || loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-[var(--text-secondary)]">Загрузка...</div>
+      <div className="animate-fade-in">
+        <div className="h-4 w-32 bg-[var(--bg-secondary)] rounded mb-6 animate-pulse" />
+        <div className="h-8 w-64 bg-[var(--bg-secondary)] rounded mb-8 animate-pulse" />
+        <div className="grid md:grid-cols-2 gap-6">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="glass-card rounded-2xl p-6 h-96 animate-pulse"
+            />
+          ))}
+        </div>
       </div>
     );
   }
@@ -171,12 +195,23 @@ export default function AdminModPage() {
         ← Назад в админку
       </Link>
 
-      <h1 className="text-3xl font-bold neon-text mb-2">{mod.title}</h1>
-      <p className="text-sm text-[var(--text-secondary)] mb-8">
-        Slug: <code className="text-[var(--accent-light)]">{mod.slug}</code>
-      </p>
+      <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold neon-text mb-2">{mod.title}</h1>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Slug: <code className="text-[var(--accent-light)]">{mod.slug}</code>
+          </p>
+        </div>
+        <Link
+          href={`/admin/edit-mod/${modId}`}
+          className="px-4 py-2 rounded-lg glass-card hover:border-[var(--accent)] text-sm"
+        >
+          ✎ Редактировать мод
+        </Link>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-6">
+        {/* Форма добавления версии */}
         <div className="glass-card rounded-2xl p-6">
           <h2 className="text-xl font-bold mb-4">Добавить версию</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -236,6 +271,7 @@ export default function AdminModPage() {
           </form>
         </div>
 
+        {/* Список версий */}
         <div className="glass-card rounded-2xl p-6">
           <h2 className="text-xl font-bold mb-4">
             Версии ({versions.length})
@@ -249,15 +285,24 @@ export default function AdminModPage() {
               {versions.map((v, i) => (
                 <div
                   key={v.id}
-                  className="border border-[var(--border)] rounded-lg p-3"
+                  className="border border-[var(--border)] rounded-lg p-3 group"
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="font-bold">v{v.version}</span>
-                    {i === 0 && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-[var(--accent)] text-white font-medium">
-                        LATEST
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {i === 0 && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-[var(--accent)] text-white font-medium">
+                          LATEST
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleDeleteVersion(v)}
+                        className="text-xs px-2 py-1 rounded text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Удалить версию"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                   <div className="text-xs text-[var(--text-secondary)]">
                     {formatSize(v.fileSize)}

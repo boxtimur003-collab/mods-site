@@ -63,9 +63,7 @@ export default function AdminPage() {
     try {
       await deleteDoc(doc(db, 'mods', id));
     } catch (err) {
-      alert(
-        'Ошибка удаления: ' + (err instanceof Error ? err.message : '')
-      );
+      alert('Ошибка удаления: ' + (err instanceof Error ? err.message : ''));
     }
   }
 
@@ -95,8 +93,20 @@ export default function AdminPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-10 text-[var(--text-secondary)]">
-          Загрузка модов...
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="glass-card rounded-xl overflow-hidden flex animate-pulse"
+            >
+              <div className="w-28 h-28 bg-[var(--bg-secondary)] flex-shrink-0" />
+              <div className="flex-1 p-4 space-y-2">
+                <div className="h-4 bg-[var(--bg-secondary)] rounded w-2/3" />
+                <div className="h-3 bg-[var(--bg-secondary)] rounded w-full" />
+                <div className="h-3 bg-[var(--bg-secondary)] rounded w-3/4" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : mods.length === 0 ? (
         <div className="glass-card rounded-xl p-10 text-center">
@@ -133,12 +143,18 @@ export default function AdminPage() {
                     {mod.description}
                   </p>
                 </div>
-                <div className="flex gap-2 mt-3">
+                <div className="flex gap-2 mt-3 flex-wrap">
                   <Link
                     href={`/admin/mod/${mod.id}`}
                     className="px-3 py-1.5 text-xs rounded glass-card hover:border-[var(--accent)]"
                   >
                     Версии
+                  </Link>
+                  <Link
+                    href={`/admin/edit-mod/${mod.id}`}
+                    className="px-3 py-1.5 text-xs rounded glass-card hover:border-[var(--accent)]"
+                  >
+                    Изменить
                   </Link>
                   <button
                     onClick={() => handleDelete(mod.id, mod.title)}
