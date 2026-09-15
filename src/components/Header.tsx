@@ -15,15 +15,22 @@ export default function Header() {
   const router = useRouter();
 
   async function handleLogout() {
-    await signOut(auth);
-    setMenuOpen(false);
-    router.push('/');
+    try {
+      await signOut(auth);
+      setMenuOpen(false);
+      router.push('/');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   }
 
   const nick = getNickFromEmail(user?.email);
 
   return (
-    <header className="sticky top-0 z-50 glass-card border-b border-[var(--border)]">
+    <header
+      className="sticky top-0 glass-card border-b border-[var(--border)]"
+      style={{ zIndex: 100 }}
+    >
       <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative">
@@ -59,7 +66,8 @@ export default function Header() {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg glass-card hover:border-[var(--accent)]"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg glass-card hover:border-[var(--accent)] cursor-pointer"
+                type="button"
               >
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-xs font-bold">
                   {nick[0]?.toUpperCase()}
@@ -70,20 +78,43 @@ export default function Header() {
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-56 glass-card rounded-lg py-2 animate-fade-in">
-                  <div className="px-4 py-2 text-xs text-[var(--text-secondary)] border-b border-[var(--border)]">
-                    Вы вошли как
-                    <div className="text-[var(--text-primary)] font-medium text-sm truncate">
-                      {nick}
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10"
+                <>
+                  {/* Невидимый backdrop для закрытия меню при клике мимо */}
+                  <div
+                    className="fixed inset-0"
+                    style={{ zIndex: 98 }}
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div
+                    className="absolute right-0 mt-2 w-56 glass-card rounded-lg py-2 animate-fade-in"
+                    style={{
+                      zIndex: 99,
+                      background: 'rgba(22, 22, 42, 0.95)',
+                      backdropFilter: 'blur(16px)',
+                    }}
                   >
-                    Выйти
-                  </button>
-                </div>
+                    <div className="px-4 py-2 text-xs text-[var(--text-secondary)] border-b border-[var(--border)]">
+                      Вы вошли как
+                      <div className="text-[var(--text-primary)] font-medium text-sm truncate">
+                        {nick}
+                      </div>
+                    </div>
+                    <Link
+                      href="/admin"
+                      onClick={() => setMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent)]/10"
+                    >
+                      Админка
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 cursor-pointer"
+                      type="button"
+                    >
+                      Выйти
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           ) : (
