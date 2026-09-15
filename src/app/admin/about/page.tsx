@@ -7,6 +7,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { isAdmin } from '@/lib/admin';
+import { useToast } from '@/components/Toast';
 
 const DEFAULT_ABOUT = {
   title: 'Что такое Virion Mods?',
@@ -19,11 +20,10 @@ const DEFAULT_ABOUT = {
 export default function AdminAboutPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
 
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
@@ -60,8 +60,6 @@ export default function AdminAboutPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-    setSaved(false);
     setSaving(true);
 
     try {
@@ -72,10 +70,9 @@ export default function AdminAboutPage() {
         authorUrl: authorUrl.trim(),
         contacts: contacts.trim(),
       });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      toast.success('Сохранено!');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка');
+      toast.error(err instanceof Error ? err.message : 'Ошибка');
     } finally {
       setSaving(false);
     }
@@ -174,22 +171,7 @@ export default function AdminAboutPage() {
             placeholder="@kt1w_X"
             className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] focus:outline-none focus:border-[var(--accent)]"
           />
-          <p className="text-xs text-[var(--text-secondary)] mt-1">
-            Символ @ не обязателен — добавим автоматически
-          </p>
         </div>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        {saved && (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-2 text-sm text-green-400 animate-fade-in">
-            ✓ Сохранено!
-          </div>
-        )}
 
         <button
           type="submit"

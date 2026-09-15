@@ -17,6 +17,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { isAdmin } from '@/lib/admin';
+import { useToast } from '@/components/Toast';
 
 type ModData = {
   title: string;
@@ -41,6 +42,7 @@ function formatSize(bytes: number) {
 export default function AdminModPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const params = useParams();
   const modId = params?.id as string;
 
@@ -52,7 +54,6 @@ export default function AdminModPage() {
   const [changelog, setChangelog] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (authLoading) return;
@@ -99,10 +100,9 @@ export default function AdminModPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
 
     if (!mod || !file || !version.trim()) {
-      setError('Заполни номер версии и выбери файл');
+      toast.error('Заполни номер версии и выбери файл');
       return;
     }
 
@@ -127,9 +127,11 @@ export default function AdminModPage() {
         fileUrl: data.downloadUrl,
         fileSize: data.fileSize,
         changelog: changelog.trim(),
+        downloads: 0,
         createdAt: serverTimestamp(),
       });
 
+      toast.success(`Версия v${version.trim()} загружена!`);
       setVersion('');
       setChangelog('');
       setFile(null);
@@ -138,7 +140,7 @@ export default function AdminModPage() {
       ) as HTMLInputElement;
       if (fileInput) fileInput.value = '';
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка');
+      toast.error(err instanceof Error ? err.message : 'Ошибка');
     } finally {
       setUploading(false);
     }
@@ -153,8 +155,11 @@ export default function AdminModPage() {
       return;
     try {
       await deleteDoc(doc(db, 'mods', modId, 'versions', v.id));
+      toast.success(`Версия v${v.version} удалена`);
     } catch (err) {
-      alert('Ошибка удаления: ' + (err instanceof Error ? err.message : ''));
+      toast.error(
+        'Ошибка удаления: ' + (err instanceof Error ? err.message : '')
+      );
     }
   }
 
@@ -211,7 +216,6 @@ export default function AdminModPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Форма добавления версии */}
         <div className="glass-card rounded-2xl p-6">
           <h2 className="text-xl font-bold mb-4">Добавить версию</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -255,12 +259,6 @@ export default function AdminModPage() {
               />
             </div>
 
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-sm text-red-400">
-                {error}
-              </div>
-            )}
-
             <button
               type="submit"
               disabled={uploading}
@@ -271,7 +269,6 @@ export default function AdminModPage() {
           </form>
         </div>
 
-        {/* Список версий */}
         <div className="glass-card rounded-2xl p-6">
           <h2 className="text-xl font-bold mb-4">
             Версии ({versions.length})

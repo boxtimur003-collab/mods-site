@@ -15,6 +15,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { isAdmin } from '@/lib/admin';
+import { useToast } from '@/components/Toast';
 
 type Mod = {
   id: string;
@@ -27,6 +28,7 @@ type Mod = {
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [mods, setMods] = useState<Mod[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,8 +64,11 @@ export default function AdminPage() {
     if (!confirm(`Удалить мод "${title}"?`)) return;
     try {
       await deleteDoc(doc(db, 'mods', id));
+      toast.success(`Мод "${title}" удалён`);
     } catch (err) {
-      alert('Ошибка удаления: ' + (err instanceof Error ? err.message : ''));
+      toast.error(
+        'Ошибка удаления: ' + (err instanceof Error ? err.message : '')
+      );
     }
   }
 

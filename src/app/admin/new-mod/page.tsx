@@ -9,10 +9,12 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { isAdmin } from '@/lib/admin';
 import { slugify } from '@/lib/nick';
+import { useToast } from '@/components/Toast';
 
 export default function NewModPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [slug, setSlug] = useState('');
@@ -20,14 +22,12 @@ export default function NewModPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (authLoading) return;
     if (!user || !isAdmin(user.uid)) router.push('/login');
   }, [user, authLoading, router]);
 
-  // Автогенерация slug из title (если пользователь не правил вручную)
   useEffect(() => {
     if (!slugTouched) {
       setSlug(slugify(title));
@@ -43,18 +43,17 @@ export default function NewModPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
 
     if (!title.trim()) {
-      setError('Введите название');
+      toast.error('Введите название');
       return;
     }
     if (!slug.trim()) {
-      setError('Slug не может быть пустым');
+      toast.error('Slug не может быть пустым');
       return;
     }
     if (!imageFile) {
-      setError('Выберите картинку');
+      toast.error('Выберите картинку');
       return;
     }
 
@@ -79,9 +78,10 @@ export default function NewModPage() {
         createdAt: serverTimestamp(),
       });
 
+      toast.success('Мод создан!');
       router.push('/admin');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка');
+      toast.error(err instanceof Error ? err.message : 'Ошибка');
     } finally {
       setUploading(false);
     }
@@ -184,12 +184,6 @@ export default function NewModPage() {
             </div>
           )}
         </div>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-sm text-red-400">
-            {error}
-          </div>
-        )}
 
         <button
           type="submit"
