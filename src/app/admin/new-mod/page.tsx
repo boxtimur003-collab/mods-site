@@ -8,6 +8,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { isAdmin } from '@/lib/admin';
+import { slugify } from '@/lib/nick';
 
 export default function NewModPage() {
   const { user, loading: authLoading } = useAuth();
@@ -15,6 +16,7 @@ export default function NewModPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [slug, setSlug] = useState('');
+  const [slugTouched, setSlugTouched] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
@@ -25,19 +27,12 @@ export default function NewModPage() {
     if (!user || !isAdmin(user.uid)) router.push('/login');
   }, [user, authLoading, router]);
 
+  // Автогенерация slug из title (если пользователь не правил вручную)
   useEffect(() => {
-    if (!slug || slug === autoSlug(title)) {
-      setSlug(autoSlug(title));
+    if (!slugTouched) {
+      setSlug(slugify(title));
     }
-  }, [title]);
-
-  function autoSlug(s: string) {
-    return s
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9а-яё]+/gi, '-')
-      .replace(/^-+|-+$/g, '');
-  }
+  }, [title, slugTouched]);
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -52,6 +47,10 @@ export default function NewModPage() {
 
     if (!title.trim()) {
       setError('Введите название');
+      return;
+    }
+    if (!slug.trim()) {
+      setError('Slug не может быть пустым');
       return;
     }
     if (!imageFile) {
@@ -74,8 +73,9 @@ export default function NewModPage() {
       await addDoc(collection(db, 'mods'), {
         title: title.trim(),
         description: description.trim(),
-        slug: slug.trim() || autoSlug(title),
+        slug: slug.trim(),
         imageUrl: imgData.imageUrl,
+        totalDownloads: 0,
         createdAt: serverTimestamp(),
       });
 
@@ -118,7 +118,7 @@ export default function NewModPage() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Например: Super Weapons Mod"
+            placeholder="Например: Автокарт"
             required
             className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_15px_rgba(124,58,237,0.4)]"
           />
@@ -139,17 +139,25 @@ export default function NewModPage() {
 
         <div>
           <label className="block text-sm text-[var(--text-secondary)] mb-2">
-            Slug (для ссылок и тегов релизов)
+            Slug (ссылка на мод) *
           </label>
           <input
             type="text"
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="super-weapons-mod"
+            onChange={(e) => {
+              setSlug(slugify(e.target.value));
+              setSlugTouched(true);
+            }}
+            placeholder="avtokart"
+            required
             className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_15px_rgba(124,58,237,0.4)]"
           />
           <p className="text-xs text-[var(--text-secondary)] mt-1">
-            Только латиница, цифры и дефисы. Генерируется автоматически.
+            Только латиница и дефисы. Русские буквы автоматически
+            транслитерируются. Ссылка:{' '}
+            <code className="text-[var(--accent-light)]">
+              /mods/{slug || '...'}
+            </code>
           </p>
         </div>
 

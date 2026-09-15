@@ -8,6 +8,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { isAdmin } from '@/lib/admin';
+import { slugify } from '@/lib/nick';
 
 export default function EditModPage() {
   const { user, loading: authLoading } = useAuth();
@@ -62,12 +63,15 @@ export default function EditModPage() {
       setError('Введите название');
       return;
     }
+    if (!slug.trim()) {
+      setError('Slug не может быть пустым');
+      return;
+    }
 
     setSaving(true);
     try {
       let imageUrl = currentImageUrl;
 
-      // Если выбрана новая картинка — загружаем
       if (newImageFile) {
         const fd = new FormData();
         fd.append('file', newImageFile);
@@ -150,11 +154,13 @@ export default function EditModPage() {
           <input
             type="text"
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            onChange={(e) => setSlug(slugify(e.target.value))}
+            required
             className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_15px_rgba(124,58,237,0.4)]"
           />
           <p className="text-xs text-[var(--text-secondary)] mt-1">
-            ⚠️ Меняй аккуратно — все ссылки на мод изменятся
+            ⚠️ Меняй аккуратно — все ссылки на мод изменятся. Ссылка:{' '}
+            <code className="text-[var(--accent-light)]">/mods/{slug}</code>
           </p>
         </div>
 

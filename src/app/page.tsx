@@ -17,12 +17,31 @@ type Mod = {
 };
 
 type SortMode = 'date' | 'title' | 'downloads';
+type GridMode = 1 | 2 | 3;
+
+const GRID_KEY = 'virion:grid';
 
 export default function HomePage() {
   const [mods, setMods] = useState<Mod[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortMode>('date');
+  const [grid, setGrid] = useState<GridMode>(2);
+  const [mounted, setMounted] = useState(false);
+
+  // Загружаем сохранённый выбор сетки
+  useEffect(() => {
+    setMounted(true);
+    const saved = localStorage.getItem(GRID_KEY);
+    if (saved === '1' || saved === '2' || saved === '3') {
+      setGrid(parseInt(saved) as GridMode);
+    }
+  }, []);
+
+  function changeGrid(g: GridMode) {
+    setGrid(g);
+    localStorage.setItem(GRID_KEY, String(g));
+  }
 
   useEffect(() => {
     const q = query(collection(db, 'mods'), orderBy('createdAt', 'desc'));
@@ -68,6 +87,13 @@ export default function HomePage() {
     return list;
   }, [mods, search, sort]);
 
+  const gridClass =
+    grid === 1
+      ? 'grid-cols-1'
+      : grid === 2
+      ? 'grid-cols-1 sm:grid-cols-2'
+      : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+
   return (
     <div className="animate-fade-in">
       <div className="mb-10 text-center">
@@ -79,6 +105,7 @@ export default function HomePage() {
         </p>
       </div>
 
+      {/* Поиск + сортировка + сетка */}
       <div className="mb-6 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">
@@ -110,10 +137,47 @@ export default function HomePage() {
           <option value="title">По названию (А-Я)</option>
           <option value="downloads">По популярности</option>
         </select>
+
+        {/* Переключатель сетки */}
+        {mounted && (
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)]">
+            {([1, 2, 3] as GridMode[]).map((g) => (
+              <button
+                key={g}
+                onClick={() => changeGrid(g)}
+                title={`${g} в ряд`}
+                className={`w-10 h-10 rounded flex items-center justify-center transition-all ${
+                  grid === g
+                    ? 'bg-[var(--accent)] text-white shadow-[0_0_12px_rgba(124,58,237,0.5)]'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                {g === 1 && (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <rect x="2" y="3" width="12" height="10" rx="1" />
+                  </svg>
+                )}
+                {g === 2 && (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <rect x="1" y="3" width="6" height="10" rx="1" />
+                    <rect x="9" y="3" width="6" height="10" rx="1" />
+                  </svg>
+                )}
+                {g === 3 && (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <rect x="1" y="3" width="4" height="10" rx="1" />
+                    <rect x="6" y="3" width="4" height="10" rx="1" />
+                    <rect x="11" y="3" width="4" height="10" rx="1" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className={`grid ${gridClass} gap-6`}>
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -136,7 +200,7 @@ export default function HomePage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className={`grid ${gridClass} gap-6`}>
           {displayed.map((mod, i) => (
             <Link
               key={mod.id}
@@ -149,7 +213,7 @@ export default function HomePage() {
                   src={mod.imageUrl}
                   alt={mod.title}
                   fill
-                  sizes="(max-width: 640px) 100vw, 50vw"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   className="object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] via-transparent to-transparent" />
