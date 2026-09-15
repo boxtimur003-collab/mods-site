@@ -81,3 +81,32 @@ a, button, input {
 .animate-fade-in {
   animation: fadeInUp 0.4s ease-out;
 }
+
+/* Staggered появление карточек */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-card-in {
+  animation: cardIn 0.5s ease-out backwards;
+}
+
+/* Неоновые частицы на фоне */
+@keyframes particleFloat {
+  0% { transform: translate(0, 0); opacity: 0; }
+  20% { opacity: 0.6; }
+  80% { opacity: 0.6; }
+  100% { transform: translate(-100px, -300px); opacity: 0; }
+}
+
+.particle {
+  position: fixed;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  box-shadow: 0 0 8px var(--accent);
+  pointer-events: none;
+  z-index: -1;
+  animation: particleFloat linear infinite;
+}

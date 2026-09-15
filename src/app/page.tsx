@@ -3,14 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  doc,
-  getDoc,
-} from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 type Mod = {
@@ -55,11 +48,8 @@ export default function HomePage() {
     return () => unsub();
   }, []);
 
-  // Фильтрация + сортировка
   const displayed = useMemo(() => {
     let list = [...mods];
-
-    // Поиск
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -68,8 +58,6 @@ export default function HomePage() {
           m.description.toLowerCase().includes(q)
       );
     }
-
-    // Сортировка
     if (sort === 'date') {
       list.sort((a, b) => b.createdAt - a.createdAt);
     } else if (sort === 'title') {
@@ -77,7 +65,6 @@ export default function HomePage() {
     } else if (sort === 'downloads') {
       list.sort((a, b) => b.totalDownloads - a.totalDownloads);
     }
-
     return list;
   }, [mods, search, sort]);
 
@@ -92,7 +79,6 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Поиск + сортировка */}
       <div className="mb-6 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">
@@ -151,19 +137,20 @@ export default function HomePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {displayed.map((mod) => (
+          {displayed.map((mod, i) => (
             <Link
               key={mod.id}
               href={`/mods/${mod.slug}`}
-              className="group glass-card rounded-xl overflow-hidden hover:border-[var(--accent)] hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] transition-all duration-300"
+              className="group glass-card rounded-xl overflow-hidden hover:border-[var(--accent)] hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] transition-all duration-300 animate-card-in"
+              style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="relative aspect-video overflow-hidden bg-[var(--bg-secondary)]">
                 <Image
                   src={mod.imageUrl}
                   alt={mod.title}
                   fill
+                  sizes="(max-width: 640px) 100vw, 50vw"
                   className="object-cover group-hover:scale-110 transition-transform duration-500"
-                  unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] via-transparent to-transparent" />
 

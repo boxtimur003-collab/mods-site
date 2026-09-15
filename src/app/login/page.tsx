@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { nickToEmail, isValidNick } from '@/lib/nick';
+import Particles from '@/components/Particles';
 
 export default function LoginPage() {
   const [nick, setNick] = useState('');
@@ -47,8 +48,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center px-4 animate-fade-in">
-      <div className="w-full max-w-md">
+    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center px-4 animate-fade-in relative">
+      <Particles count={40} />
+
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="relative inline-block">
             <Image
