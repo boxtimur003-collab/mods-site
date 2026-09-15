@@ -7,11 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-
-function getNickFromEmail(email: string | null | undefined): string {
-  if (!email) return 'user';
-  return email.split('@')[0];
-}
+import { getNickFromEmail } from '@/lib/nick';
 
 export default function Header() {
   const { user, loading } = useAuth();

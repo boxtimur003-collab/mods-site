@@ -1,129 +1,112 @@
 'use client';
 
-import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { nickToEmail, isValidNick } from '@/lib/nick';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
-export default function LoginPage() {
-  const [nick, setNick] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+type Mod = {
+  id: string;
+  title: string;
+  description: string;
+  slug: string;
+  imageUrl: string;
+  createdAt: number;
+};
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
+export default function HomePage() {
+  const [mods, setMods] = useState<Mod[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    if (!isValidNick(nick)) {
-      setError('Ник: 3-20 символов, только латиница, цифры, _ и -');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, nickToEmail(nick), password);
-      router.push('/');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Ошибка';
-      if (
-        msg.includes('invalid-credential') ||
-        msg.includes('wrong-password') ||
-        msg.includes('user-not-found')
-      ) {
-        setError('Неверный ник или пароль');
-      } else if (msg.includes('too-many-requests')) {
-        setError('Слишком много попыток. Попробуй позже.');
-      } else {
-        setError('Ошибка входа. Попробуй ещё раз.');
-      }
-    } finally {
+  useEffect(() => {
+    const q = query(collection(db, 'mods'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snap) => {
+      const list: Mod[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({
+          id: d.id,
+          title: data.title || '',
+          description: data.description || '',
+          slug: data.slug || d.id,
+          imageUrl: data.imageUrl || '/logo.png',
+          createdAt: data.createdAt?.seconds
+            ? data.createdAt.seconds * 1000
+            : Date.now(),
+        });
+      });
+      setMods(list);
       setLoading(false);
-    }
-  }
+    });
+    return () => unsub();
+  }, []);
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center px-4 animate-fade-in">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="relative inline-block">
-            <Image
-              src="/logo.png"
-              alt="Virion Mods"
-              width={80}
-              height={80}
-              className="rounded-2xl mx-auto"
-            />
-            <div className="absolute inset-0 rounded-2xl blur-2xl bg-purple-500/50 -z-10" />
-          </div>
-          <h1 className="text-3xl font-bold neon-text mt-4">Вход</h1>
-          <p className="text-[var(--text-secondary)] text-sm mt-1">
-            Войди в свой аккаунт Virion Mods
+    <div className="animate-fade-in">
+      <div className="mb-10 text-center">
+        <h1 className="text-4xl sm:text-5xl font-bold neon-text mb-3">
+          Все моды
+        </h1>
+        <p className="text-[var(--text-secondary)]">
+          Скачивай, устанавливай, играй
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="glass-card rounded-xl overflow-hidden animate-pulse"
+            >
+              <div className="aspect-video bg-[var(--bg-secondary)]" />
+              <div className="p-5 space-y-2">
+                <div className="h-5 bg-[var(--bg-secondary)] rounded w-2/3" />
+                <div className="h-4 bg-[var(--bg-secondary)] rounded w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : mods.length === 0 ? (
+        <div className="glass-card rounded-xl p-10 text-center">
+          <p className="text-[var(--text-secondary)]">
+            Пока нет модов. Загляни позже!
           </p>
         </div>
-
-        <div className="glass-card rounded-2xl p-6 sm:p-8 shadow-[0_0_40px_rgba(124,58,237,0.2)]">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm text-[var(--text-secondary)] mb-2">
-                Ник
-              </label>
-              <input
-                type="text"
-                placeholder="Твой ник"
-                value={nick}
-                onChange={(e) => setNick(e.target.value)}
-                required
-                autoComplete="username"
-                className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_15px_rgba(124,58,237,0.4)] transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-[var(--text-secondary)] mb-2">
-                Пароль
-              </label>
-              <input
-                type="password"
-                placeholder="Минимум 6 символов"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                autoComplete="current-password"
-                className="w-full px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_15px_rgba(124,58,237,0.4)] transition-all"
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-sm text-red-400 animate-fade-in">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-gradient w-full py-3 rounded-lg font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {mods.map((mod) => (
+            <Link
+              key={mod.id}
+              href={`/mods/${mod.slug}`}
+              className="group glass-card rounded-xl overflow-hidden hover:border-[var(--accent)] hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] transition-all duration-300"
             >
-              {loading ? 'Загрузка...' : 'Войти'}
-            </button>
-          </form>
-        </div>
+              <div className="relative aspect-video overflow-hidden bg-[var(--bg-secondary)]">
+                <Image
+                  src={mod.imageUrl}
+                  alt={mod.title}
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] via-transparent to-transparent" />
+              </div>
 
-        <div className="text-center mt-6">
-          <Link
-            href="/"
-            className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-light)]"
-          >
-            ← Вернуться на главную
-          </Link>
+              <div className="p-5">
+                <h2 className="text-xl font-bold mb-2 group-hover:text-[var(--accent-light)] transition-colors">
+                  {mod.title}
+                </h2>
+                <div className="max-h-0 group-hover:max-h-32 overflow-hidden transition-all duration-500 ease-out">
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed pt-1">
+                    {mod.description}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }
