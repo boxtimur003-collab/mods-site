@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
 import Header from '@/components/Header';
 import Cursor from '@/components/Cursor';
+import Background from '@/components/Background';
 
 export const metadata: Metadata = {
   title: {
@@ -44,6 +45,7 @@ export default function RootLayout({
     <html lang="ru">
       <body>
         <AuthProvider>
+          <Background />
           <Cursor />
           <Header />
           <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>

@@ -16,18 +16,26 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
   background: var(--bg-primary);
+}
+
+body {
+  background: transparent;
   color: var(--text-primary);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
 }
 
+/* ==== ФОН: базовое свечение ==== */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
+  pointer-events: none;
   background:
     radial-gradient(circle at 15% 20%, rgba(124, 58, 237, 0.15), transparent 45%),
     radial-gradient(circle at 85% 70%, rgba(168, 85, 247, 0.12), transparent 45%),
@@ -35,9 +43,30 @@ body::before {
   animation: bgFloat 20s ease-in-out infinite;
 }
 
+/* ==== ФОН: сетка-паттерн ==== */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
+  background-size: 50px 50px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  animation: gridMove 60s linear infinite;
+}
+
 @keyframes bgFloat {
   0%, 100% { transform: scale(1) translate(0, 0); }
   50% { transform: scale(1.1) translate(-2%, -2%); }
+}
+
+@keyframes gridMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 50px 50px; }
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -59,7 +88,7 @@ a, button, input {
 }
 
 .glass-card {
-  background: rgba(22, 22, 42, 0.6);
+  background: rgba(22, 22, 42, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
@@ -82,7 +111,6 @@ a, button, input {
   animation: fadeInUp 0.4s ease-out;
 }
 
-/* Staggered появление карточек */
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(20px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -91,7 +119,7 @@ a, button, input {
   animation: cardIn 0.5s ease-out backwards;
 }
 
-/* Неоновые частицы на фоне */
+/* ==== ЧАСТИЦЫ (для login) ==== */
 @keyframes particleFloat {
   0% { transform: translate(0, 0); opacity: 0; }
   20% { opacity: 0.6; }
@@ -107,6 +135,45 @@ a, button, input {
   background: var(--accent-light);
   box-shadow: 0 0 8px var(--accent);
   pointer-events: none;
-  z-index: -1;
+  z-index: 1;
   animation: particleFloat linear infinite;
+}
+
+/* ==== ОРБЫ ==== */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.55;
+  will-change: transform;
+}
+
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(80px, -60px) scale(1.15); }
+  66% { transform: translate(-50px, 40px) scale(0.9); }
+}
+
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-100px, 80px) scale(1.2); }
+}
+
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(60px, 100px) scale(1.1); }
+  75% { transform: translate(-70px, -80px) scale(0.95); }
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.5); }
+}
+
+/* Контент поверх всего фона */
+header, main {
+  position: relative;
+  z-index: 2;
 }
