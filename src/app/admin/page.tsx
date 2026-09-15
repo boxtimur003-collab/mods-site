@@ -84,12 +84,20 @@ export default function AdminPage() {
             Управление модами
           </p>
         </div>
-        <Link
-          href="/admin/new-mod"
-          className="btn-gradient px-5 py-2.5 rounded-lg text-sm font-medium text-white"
-        >
-          + Добавить мод
-        </Link>
+        <div className="flex gap-3 flex-wrap">
+          <Link
+            href="/admin/about"
+            className="px-4 py-2.5 rounded-lg glass-card hover:border-[var(--accent)] text-sm"
+          >
+            ✎ О сайте
+          </Link>
+          <Link
+            href="/admin/new-mod"
+            className="btn-gradient px-5 py-2.5 rounded-lg text-sm font-medium text-white"
+          >
+            + Добавить мод
+          </Link>
+        </div>
       </div>
 
       {loading ? (

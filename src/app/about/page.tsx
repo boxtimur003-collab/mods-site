@@ -1,17 +1,53 @@
-import Link from 'next/link';
-import Image from 'next/image';
+'use client';
 
-export const metadata = {
-  title: 'О сайте — Virion Mods',
-  description: 'Virion Mods — платформа для публикации и скачивания модов',
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+type AboutData = {
+  title: string;
+  text: string;
+  authorName: string;
+  authorUrl: string;
+  contacts: string;
+};
+
+const DEFAULT_ABOUT: AboutData = {
+  title: 'Что такое Virion Mods?',
+  text: 'Virion Mods — это удобная платформа для скачивания модификаций автора Virion.',
+  authorName: 'Virion',
+  authorUrl: 'https://t.me/virionDEV',
+  contacts: '@kt1w_X',
 };
 
 export default function AboutPage() {
+  const [about, setAbout] = useState<AboutData>(DEFAULT_ABOUT);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'about'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setAbout({
+          title: data.title || DEFAULT_ABOUT.title,
+          text: data.text || DEFAULT_ABOUT.text,
+          authorName: data.authorName || DEFAULT_ABOUT.authorName,
+          authorUrl: data.authorUrl || DEFAULT_ABOUT.authorUrl,
+          contacts: data.contacts || DEFAULT_ABOUT.contacts,
+        });
+      }
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
   return (
     <div className="animate-fade-in max-w-3xl mx-auto">
       <div className="text-center mb-10">
         <div className="relative inline-block mb-4">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/logo.png"
             alt="Virion Mods"
             width={100}
@@ -26,70 +62,60 @@ export default function AboutPage() {
         </p>
       </div>
 
-      <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-6 leading-relaxed">
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-[var(--accent-light)]">
-            Что такое Virion Mods?
-          </h2>
-          <p className="text-[var(--text-secondary)]">
-            Virion Mods — это удобная платформа для публикации и скачивания
-            модификаций. Мы храним файлы в надёжном месте, следим за версиями
-            и делаем процесс установки максимально простым.
-          </p>
-        </section>
+      {loading ? (
+        <div className="glass-card rounded-2xl p-8 space-y-4 animate-pulse">
+          <div className="h-8 bg-[var(--bg-secondary)] rounded w-1/2" />
+          <div className="h-4 bg-[var(--bg-secondary)] rounded w-full" />
+          <div className="h-4 bg-[var(--bg-secondary)] rounded w-3/4" />
+          <div className="h-6 bg-[var(--bg-secondary)] rounded w-1/3 mt-6" />
+          <div className="h-4 bg-[var(--bg-secondary)] rounded w-2/3" />
+        </div>
+      ) : (
+        <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-6 leading-relaxed">
+          <section>
+            <h2 className="text-2xl font-bold mb-3 text-[var(--accent-light)]">
+              {about.title}
+            </h2>
+            <p className="text-[var(--text-secondary)] whitespace-pre-wrap">
+              {about.text}
+            </p>
+          </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-[var(--accent-light)]">
-            Как это работает?
-          </h2>
-          <ul className="text-[var(--text-secondary)] space-y-2 list-none">
-            <li className="flex gap-3">
-              <span className="text-[var(--accent)] font-bold">01.</span>
-              <span>
-                Открой <Link href="/" className="text-[var(--accent-light)] hover:underline">главную</Link> и выбери мод
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-[var(--accent)] font-bold">02.</span>
-              <span>Перейди на страницу мода и выбери нужную версию</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-[var(--accent)] font-bold">03.</span>
-              <span>Скачай файл кнопкой «Скачать»</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-[var(--accent)] font-bold">04.</span>
-              <span>Установи мод по инструкции из файла</span>
-            </li>
-          </ul>
-        </section>
+          <section>
+            <h2 className="text-2xl font-bold mb-3 text-[var(--accent-light)]">
+              Автор
+            </h2>
+            <p className="text-[var(--text-secondary)]">
+              {about.authorName} —{' '}
+              <a
+                href={about.authorUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--accent-light)] hover:underline"
+              >
+                {about.authorUrl.replace('https://', '')}
+              </a>
+            </p>
+          </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-[var(--accent-light)]">
-            Технологии
-          </h2>
-          <p className="text-[var(--text-secondary)]">
-            Сайт построен на Next.js, Firebase и Vercel. Файлы и картинки
-            хранятся в GitHub, что обеспечивает высокую скорость скачивания
-            и надёжность.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-[var(--accent-light)]">
-            Контакты
-          </h2>
-          <p className="text-[var(--text-secondary)]">
-            По вопросам сотрудничества и добавления модов — пиши на почту{' '}
-            <a
-              href="mailto:contact@virionmods.ru"
-              className="text-[var(--accent-light)] hover:underline"
-            >
-              contact@virionmods.ru
-            </a>
-          </p>
-        </section>
-      </div>
+          <section>
+            <h2 className="text-2xl font-bold mb-3 text-[var(--accent-light)]">
+              Для связи и предложений
+            </h2>
+            <p className="text-[var(--text-secondary)]">
+              Telegram:{' '}
+              <a
+                href={`https://t.me/${about.contacts.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--accent-light)] hover:underline"
+              >
+                {about.contacts}
+              </a>
+            </p>
+          </section>
+        </div>
+      )}
 
       <div className="text-center mt-8">
         <Link
