@@ -1,9 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import {
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  doc,
+  getDoc,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 type Mod = {
@@ -13,11 +20,16 @@ type Mod = {
   slug: string;
   imageUrl: string;
   createdAt: number;
+  totalDownloads: number;
 };
+
+type SortMode = 'date' | 'title' | 'downloads';
 
 export default function HomePage() {
   const [mods, setMods] = useState<Mod[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortMode>('date');
 
   useEffect(() => {
     const q = query(collection(db, 'mods'), orderBy('createdAt', 'desc'));
@@ -34,6 +46,7 @@ export default function HomePage() {
           createdAt: data.createdAt?.seconds
             ? data.createdAt.seconds * 1000
             : Date.now(),
+          totalDownloads: data.totalDownloads || 0,
         });
       });
       setMods(list);
@@ -41,6 +54,32 @@ export default function HomePage() {
     });
     return () => unsub();
   }, []);
+
+  // Фильтрация + сортировка
+  const displayed = useMemo(() => {
+    let list = [...mods];
+
+    // Поиск
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (m) =>
+          m.title.toLowerCase().includes(q) ||
+          m.description.toLowerCase().includes(q)
+      );
+    }
+
+    // Сортировка
+    if (sort === 'date') {
+      list.sort((a, b) => b.createdAt - a.createdAt);
+    } else if (sort === 'title') {
+      list.sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+    } else if (sort === 'downloads') {
+      list.sort((a, b) => b.totalDownloads - a.totalDownloads);
+    }
+
+    return list;
+  }, [mods, search, sort]);
 
   return (
     <div className="animate-fade-in">
@@ -51,6 +90,40 @@ export default function HomePage() {
         <p className="text-[var(--text-secondary)]">
           Скачивай, устанавливай, играй
         </p>
+      </div>
+
+      {/* Поиск + сортировка */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">
+            🔍
+          </span>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по названию или описанию..."
+            className="w-full pl-11 pr-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_15px_rgba(124,58,237,0.3)] transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xl leading-none px-2"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortMode)}
+          className="px-4 py-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+        >
+          <option value="date">Сначала новые</option>
+          <option value="title">По названию (А-Я)</option>
+          <option value="downloads">По популярности</option>
+        </select>
       </div>
 
       {loading ? (
@@ -68,15 +141,17 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-      ) : mods.length === 0 ? (
+      ) : displayed.length === 0 ? (
         <div className="glass-card rounded-xl p-10 text-center">
           <p className="text-[var(--text-secondary)]">
-            Пока нет модов. Загляни позже!
+            {search
+              ? `Ничего не найдено по запросу "${search}"`
+              : 'Пока нет модов. Загляни позже!'}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {mods.map((mod) => (
+          {displayed.map((mod) => (
             <Link
               key={mod.id}
               href={`/mods/${mod.slug}`}
@@ -91,6 +166,13 @@ export default function HomePage() {
                   unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-card)] via-transparent to-transparent" />
+
+                {mod.totalDownloads > 0 && (
+                  <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-xs font-medium flex items-center gap-1">
+                    <span>⬇</span>
+                    <span>{mod.totalDownloads}</span>
+                  </div>
+                )}
               </div>
 
               <div className="p-5">
@@ -106,6 +188,12 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
+      )}
+
+      {!loading && displayed.length > 0 && (
+        <p className="text-center text-sm text-[var(--text-secondary)] mt-8">
+          Показано: {displayed.length} из {mods.length}
+        </p>
       )}
     </div>
   );

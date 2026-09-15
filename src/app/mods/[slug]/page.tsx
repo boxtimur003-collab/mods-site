@@ -11,6 +11,9 @@ import {
   orderBy,
   query,
   where,
+  doc,
+  updateDoc,
+  increment,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -29,6 +32,7 @@ type Version = {
   fileSize: number;
   changelog: string;
   createdAt: number;
+  downloads: number;
 };
 
 function formatSize(bytes: number) {
@@ -96,6 +100,7 @@ export default function ModPage() {
           createdAt: data.createdAt?.seconds
             ? data.createdAt.seconds * 1000
             : Date.now(),
+          downloads: data.downloads || 0,
         });
       });
       setVersions(list);
@@ -103,6 +108,26 @@ export default function ModPage() {
     });
     return () => unsub();
   }, [mod?.id]);
+
+  // Счётчик скачиваний
+  async function handleDownload(version: Version) {
+    if (!mod) return;
+    try {
+      // Увеличиваем счётчик у версии
+      await updateDoc(doc(db, 'mods', mod.id, 'versions', version.id), {
+        downloads: increment(1),
+      });
+      // Увеличиваем общий счётчик мода
+      await updateDoc(doc(db, 'mods', mod.id), {
+        totalDownloads: increment(1),
+      });
+    } catch (err) {
+      // Не критично, просто логируем
+      console.error('Не удалось обновить счётчик:', err);
+    }
+    // Открываем скачивание
+    window.open(version.fileUrl, '_blank', 'noopener,noreferrer');
+  }
 
   if (loading) {
     return (
@@ -191,10 +216,12 @@ export default function ModPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
+                    <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)] flex-wrap">
                       <span>{formatSize(v.fileSize)}</span>
                       <span>•</span>
                       <span>{formatDate(v.createdAt)}</span>
+                      <span>•</span>
+                      <span>⬇ {v.downloads}</span>
                     </div>
                     {v.changelog && (
                       <p className="text-sm text-[var(--text-secondary)] mt-2 whitespace-pre-wrap">
@@ -203,14 +230,12 @@ export default function ModPage() {
                     )}
                   </div>
 
-                  <a
-                    href={v.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => handleDownload(v)}
                     className="btn-gradient px-5 py-2.5 rounded-lg text-sm font-medium text-white whitespace-nowrap text-center"
                   >
                     ↓ Скачать
-                  </a>
+                  </button>
                 </div>
               );
             })}
